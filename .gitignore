@@ -53,7 +53,7 @@ cover/
 
 # Translations
 *.mo
-*.pot
+# En Odoo el .pot es la plantilla de traduccion versionada, no un artefacto de build.
 
 # Django stuff:
 *.log
