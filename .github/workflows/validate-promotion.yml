@@ -1,0 +1,59 @@
+name: Validate promotion path
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+    branches:
+      - 19.0-dev
+      - 19.0-stag
+      - 19.0
+
+permissions: {}
+
+jobs:
+  validate-promotion:
+    name: validate-promotion
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate branch flow
+        env:
+          BASE: ${{ github.event.pull_request.base.ref }}
+          HEAD: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          fail() {
+            echo "::error::PR not allowed: ${HEAD_REPO}:${HEAD} -> ${BASE_REPO}:${BASE}"
+            exit 1
+          }
+
+          case "$BASE" in
+            19.0-dev)
+              case "$HEAD" in
+                19.0|19.0-stag|19.0-dev)
+                  fail
+                  ;;
+                *)
+                  echo "Valid source for 19.0-dev: $HEAD"
+                  ;;
+              esac
+              ;;
+
+            19.0-stag)
+              [[ "$HEAD_REPO" == "$BASE_REPO" ]] || fail
+              [[ "$HEAD" == "19.0-dev" ]] || fail
+              ;;
+
+            19.0)
+              [[ "$HEAD_REPO" == "$BASE_REPO" ]] || fail
+              [[ "$HEAD" == "19.0-stag" ]] || fail
+              ;;
+
+            *)
+              fail
+              ;;
+          esac
